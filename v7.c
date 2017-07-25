@@ -30866,6 +30866,7 @@ static const char js_function_Object[] =
     "if (typeof v === 'number') return new Number(v);"
     "if (typeof v === 'string') return new String(v);"
     "if (typeof v === 'date') return new Date(v);"
+    "return v;"
     "}";
 
 V7_PRIVATE void init_object(struct v7 *v7) {
