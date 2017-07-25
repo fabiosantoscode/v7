@@ -31791,11 +31791,8 @@ V7_PRIVATE enum v7_err Array_reverse(struct v7 *v7, v7_val_t *res) {
 
 WARN_UNUSED_RESULT
 V7_PRIVATE enum v7_err Array_join(struct v7 *v7, v7_val_t *res) {
-  enum v7_err rcode = V7_OK;
   val_t this_obj = v7_get_this(v7);
   val_t arg0 = v7_arg(v7, 0);
-  size_t sep_size = 0;
-  const char *sep = NULL;
 
   *res = V7_UNDEFINED;
 
@@ -31804,53 +31801,25 @@ V7_PRIVATE enum v7_err Array_join(struct v7 *v7, v7_val_t *res) {
     /* If no separator is provided, use comma */
     arg0 = v7_mk_string(v7, ",", 1, 1);
   }
-  sep = v7_get_string(v7, &arg0, &sep_size);
 
   /* Do the actual join */
   if (is_prototype_of(v7, this_obj, v7->vals.array_prototype)) {
-    struct mbuf m;
-    char buf[100], *p;
-    long i, n, num_elems = v7_array_length(v7, this_obj);
+    long num_elems = v7_array_length(v7, this_obj);
 
-    mbuf_init(&m, 0);
+    v7_val_t out = v7_mk_string(v7, "", 0, /*COPY*/1);
 
-    for (i = 0; i < num_elems; i++) {
-      /* Append separator */
-      if (i > 0) {
-        mbuf_append(&m, sep, sep_size);
-      }
-
-      /* Append next item from an array */
-      p = buf;
-      {
-        size_t tmp;
-        rcode = to_string(v7, v7_array_get(v7, this_obj, i), NULL, buf,
-                          sizeof(buf), &tmp);
-        if (rcode != V7_OK) {
-          goto clean;
+    for (long i = 0; i < num_elems; i++) {
+        if (i > 0) {
+            out = s_concat(v7, out, arg0);
         }
-        n = tmp;
-      }
-      if (n > (long) sizeof(buf)) {
-        p = (char *) malloc(n + 1);
-        rcode = to_string(v7, v7_array_get(v7, this_obj, i), NULL, p, n, NULL);
-        if (rcode != V7_OK) {
-          goto clean;
-        }
-      }
-      mbuf_append(&m, p, n);
-      if (p != buf) {
-        free(p);
-      }
+
+        out = s_concat(v7, out, v7_array_get(v7, this_obj, i));
     }
 
-    /* mbuf contains concatenated string now. Copy it to the result. */
-    *res = v7_mk_string(v7, m.buf, m.len, 1);
-    mbuf_free(&m);
+    *res = out;
   }
 
-clean:
-  return rcode;
+  return V7_OK;
 }
 
 WARN_UNUSED_RESULT
